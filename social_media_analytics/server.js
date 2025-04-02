@@ -13,12 +13,11 @@ const fetchUsers = async (token) => {
     try {
         const response = await axios.get(`${TEST_SERVER}/users`, {
             headers: {
-                Authorization: token,
+                Authorization: token.startsWith("Bearer ") ? token : `Bearer ${token}`,
             },
         });
         return response.data;
     } catch (error) {
-        console.error("Error fetching users:", error.message);
         return [];
     }
 };
@@ -58,20 +57,18 @@ app.get("/users", async (req, res) => {
         }
         const users = await fetchUsers(req.headers.authorization);
 
-        const userPostPromises = users.map(async (userId) => {
-            const posts = await fetchUserPosts(userId, req.headers.authorization);
-            userPostCounts[userId] = posts.length;
-        });
+        const please = {};
+        console.log("users", users);
+        for(const userId of Object.keys(users.users)) {
+            const data = await fetchUserPosts(userId, req.headers.authorization);
+            please[userId] = data.length;
+        };
 
-        await Promise.all(userPostPromises);
 
-        topUsersCache = Object.entries(userPostCounts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
-            .map(([userId]) => userId);
 
-        res.json({ top_users: topUsersCache });
+        res.json({ top_users: Object.entries(please).sort((a, b) => b[1] - a[1]).slice(0, 5) });
     } catch (error) {
+        console.log("Error fetching top users:", error.message);
         res.status(500).json({ error: "Error fetching top users" });
     }
 });
@@ -104,7 +101,7 @@ app.get("/posts", async (req, res) => {
         const users = await fetchUsers(req.headers.authorization);
         let allPosts = [];
 
-        for (const userId of users) {
+        for (const userId of Object.keys(users.users)) {
             const posts = await fetchUserPosts(userId, req.headers.authorization);
             allPosts.push(...posts);
         }
@@ -128,6 +125,7 @@ app.get("/posts", async (req, res) => {
             res.json({ latest_posts: topPostsCache.latest });
         }
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Error fetching posts" });
     }
 });
