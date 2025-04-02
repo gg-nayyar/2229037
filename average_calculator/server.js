@@ -13,18 +13,23 @@ const API_URLS = {
   r: "http://20.244.56.144/evaluation-service/rand",
 };
 
-const numbers = async (numberType) => {
+const numbers = async (numberType, token) => {
   try {
     const source = axios.CancelToken.source();
     setTimeout(() => {
       source.cancel("Request timed out");
     }, 500);
+    console.log(`Fetching ${API_URLS[numberType]} numbers...`);
     const response = await axios.get(API_URLS[numberType], {
       cancelToken: source.token,
+      headers: {
+        "Authorization": token,
+      },
     });
     console.log(response.data);
     return response.data.numbers || [];
   } catch (error) {
+    console.log(error.message);
     return [];
   }
 };
@@ -60,9 +65,9 @@ app.get("/numbers/:numberId", async (req, res) => {
   if (!API_URLS[numberId]) {
     return res.status(400).json({ error: "Invalid number type" });
   }
-  const newNumbers = await numbers(numberId);
+  const newNumbers = await numbers(numberId, req.headers.authorization);
   const {prevState, currState} = updateNumbersStore(newNumbers);
-
+  
   res.json({
     windowPrevState: prevState,
     windowCurrState: currState,
@@ -70,6 +75,7 @@ app.get("/numbers/:numberId", async (req, res) => {
     average: calculateAverage(),
   });
 });
+
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });
