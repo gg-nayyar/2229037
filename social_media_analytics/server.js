@@ -79,6 +79,9 @@ app.get("/users", async (req, res) => {
 app.get("/:userId/posts", async (req, res) => {
     const { userId } = req.params;
 
+    if(req.headers.authorization === undefined) {
+        return res.json({ error: "Authorization header is required" });
+    }
     try {
         const posts = await fetchUserPosts(userId, req.headers.authorization);
         res.json({ posts });
@@ -89,6 +92,9 @@ app.get("/:userId/posts", async (req, res) => {
 
 app.get("/posts", async (req, res) => {
     const { type } = req.query;
+    if(req.headers.authorization === undefined) {
+        return res.json({ error: "Authorization header is required" });
+    }
 
     if (!type || (type !== "popular" && type !== "latest")) {
         return res.status(400).json({ error: "Invalid type parameter" });
@@ -129,6 +135,9 @@ app.get("/posts", async (req, res) => {
 app.get("/posts/:postId/comments", async (req, res) => {
     const { postId } = req.params;
 
+    if(req.headers.authorization === undefined) {
+        return res.json({ error: "Authorization header is required" });
+    }
     try {
         const comments = await fetchPostComments(postId, req.headers.authorization);    
         res.json({ comments });
